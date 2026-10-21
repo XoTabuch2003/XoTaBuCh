@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ХОТАБИЧ — Органайзер замовлень</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for pixel/tech vibe and clean typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@500;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+        .font-logo {
+            font-family: 'Space Grotesk', sans-serif;
+            letter-spacing: 2px;
+        }
+        .border-black-thick {
+            border: 2px solid #000;
+        }
+        .box-shadow-flat {
+            box-shadow: 3px 3px 0px #000;
+        }
+        .box-shadow-flat:active {
+            box-shadow: 1px 1px 0px #000;
+            transform: translate(2px, 2px);
+        }
+        .dragging {
+            opacity: 0.5;
+            scale: 0.98;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex flex-col justify-between max-w-5xl mx-auto bg-white border-x border-gray-200">
+
+    <!-- HEADER SECTION -->
+    <header class="flex flex-col sm:flex-row items-center sm:items-start justify-between border-b-2 border-black pb-6 mb-8 gap-4">
+        <!-- Logo & Title -->
+        <div class="flex items-center gap-6">
+            <!-- Geometric Tree SVG Logo matching image -->
+            <div class="w-16 h-20 flex-shrink-0 flex items-center justify-center">
+                <svg viewBox="0 0 100 120" class="w-full h-full stroke-black fill-none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+                    <!-- Tree crown (Triangle top) -->
+                    <polygon points="50,10 15,50 85,50" />
+                    <!-- Middle horizontal bar -->
+                    <line x1="25" y1="65" x2="75" y2="65" />
+                    <!-- Crescent / Hook in middle -->
+                    <path d="M 45,65 A 10,10 0 0,0 55,65" />
+                    <!-- Lower horizontal bar -->
+                    <line x1="20" y1="85" x2="80" y2="85" />
+                    <!-- Central Trunk -->
+                    <line x1="50" y1="50" x2="50" y2="105" />
+                    <!-- Base Stand -->
+                    <line x1="30" y1="105" x2="70" y2="105" />
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-4xl md:text-5xl font-extrabold uppercase tracking-wider font-logo border-b-4 border-black pb-1 inline-block">
+                    ХОТАБИЧ
+                </h1>
+                <!-- Real-time clock -->
+                <div id="live-clock" class="text-lg md:text-xl font-bold mt-2 tracking-wide font-mono">
+                    --:-- --.--.---- ---
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Panel -->
+        <div class="flex items-center gap-2">
+            <button onclick="openAddModal()" class="border-2 border-black px-4 py-2 font-bold uppercase hover:bg-black hover:text-white transition-colors duration-200 box-shadow-flat flex items-center gap-2">
+                <span>+</span> Нове замовлення
+            </button>
+        </div>
+    </header>
+
+    <!-- KANBAN COLUMNS SECTION -->
+    <main class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        
+        <!-- COLUMN 1: В РОБОТІ -->
+        <div class="flex flex-col">
+            <div class="border-2 border-black p-3 text-center text-lg font-extrabold uppercase mb-4 tracking-wider bg-gray-50">
+                В РОБОТІ
+            </div>
+            <div id="col-in-progress" class="column-container flex-1 min-h-[360px] flex flex-col gap-3 p-2 border-2 border-dashed border-gray-300 rounded" ondragover="handleDragOver(event)" ondrop="handleDrop(event, 'in-progress')" ondragenter="handleDragEnter(event)" ondragleave="handleDragLeave(event)">
+                <!-- Cards render dynamically -->
+            </div>
+        </div>
+
+        <!-- COLUMN 2: МОНТАЖ -->
+        <div class="flex flex-col">
+            <div class="border-2 border-black p-3 text-center text-lg font-extrabold uppercase mb-4 tracking-wider bg-gray-50">
+                МОНТАЖ
+            </div>
+            <div id="col-assembly" class="column-container flex-1 min-h-[360px] flex flex-col gap-3 p-2 border-2 border-dashed border-gray-300 rounded" ondragover="handleDragOver(event)" ondrop="handleDrop(event, 'assembly')" ondragenter="handleDragEnter(event)" ondragleave="handleDragLeave(event)">
+                <!-- Cards render dynamically -->
+            </div>
+        </div>
+
+        <!-- COLUMN 3: ГОТОВО -->
+        <div class="flex flex-col">
+            <div class="border-2 border-black p-3 text-center text-lg font-extrabold uppercase mb-4 tracking-wider bg-gray-50">
+                ГОТОВО
+            </div>
+            <div id="col-done" class="column-container flex-1 min-h-[360px] flex flex-col gap-3 p-2 border-2 border-dashed border-gray-300 rounded" ondragover="handleDragOver(event)" ondrop="handleDrop(event, 'done')" ondragenter="handleDragEnter(event)" ondragleave="handleDragLeave(event)">
+                <!-- Cards render dynamically -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- BOTTOM SECTION: Quick Buttons Grid (1-12) & Daily Note -->
+    <footer class="grid grid-cols-1 md:grid-cols-12 gap-6 pt-4 border-t-2 border-gray-200">
+        
+        <!-- Bottom Left: 1 to 12 Toggle Buttons Grid (Months selection) -->
+        <div class="md:col-span-6 flex flex-col">
+            <h3 class="text-sm font-bold uppercase text-gray-500 mb-2">Вибір місяця (1–12)</h3>
+            <div class="grid grid-cols-3 sm:grid-cols-4 gap-2" id="grid-buttons">
+                <!-- 12 month buttons generated by JS -->
+            </div>
+        </div>
+
+        <!-- Bottom Right: Note of the day -->
+        <div class="md:col-span-6 flex flex-col">
+            <div id="note-header" class="border-2 border-black p-2 font-bold uppercase text-lg border-b-2 bg-gray-50">
+                Нотатка дня
+            </div>
+            <textarea id="daily-note" placeholder="Введіть нотатки на цей місяць..." class="border-2 border-t-0 border-black p-3 w-full h-36 resize-none focus:outline-none focus:ring-1 focus:ring-black font-medium text-base leading-relaxed"></textarea>
+        </div>
+
+    </footer>
+
+    <!-- ADD/EDIT ORDER MODAL -->
+    <div id="order-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4 z-50">
+        <div class="bg-white border-2 border-black p-6 w-full max-w-md box-shadow-flat">
+            <h2 id="modal-title" class="text-xl font-bold mb-4 uppercase border-b-2 border-black pb-2">Нове замовлення</h2>
+            
+            <form id="order-form" onsubmit="saveOrder(event)">
+                <input type="hidden" id="order-id">
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-bold uppercase mb-1" for="order-number">Номер / Назва замовлення</label>
+                    <input type="text" id="order-number" required placeholder="наприклад: 2602" class="w-full border-2 border-black p-2 font-mono text-lg focus:outline-none">
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-bold uppercase mb-1" for="order-status">Статус</label>
+                    <select id="order-status" class="w-full border-2 border-black p-2 font-bold bg-white focus:outline-none">
+                        <option value="in-progress">В РОБОТІ</option>
+                        <option value="assembly">МОНТАЖ</option>
+                        <option value="done">ГОТОВО</option>
+                    </select>
+                </div>
+
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="closeAddModal()" class="px-4 py-2 border-2 border-gray-400 font-bold hover:bg-gray-100">Скасувати</button>
+                    <button type="submit" class="px-5 py-2 border-2 border-black bg-black text-white font-bold hover:bg-gray-800">Зберегти</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // Month names in Ukrainian
+        const monthNames = [
+            'Січень', 'Лютий', 'Березень', 'Квітень', 
+            'Травень', 'Червень', 'Липень', 'Серпень', 
+            'Вересень', 'Жовтень', 'Листопад', 'Грудень'
+        ];
+
+        // Structure per month: { '1': { orders: [], noteText: '' }, ... }
+        let monthlyData = {};
+        
+        // Active selected month index (1-12)
+        let selectedMonth = new Date().getMonth() + 1;
+
+        let draggedOrderId = null;
+
+        // Days of week in Ukrainian
+        const ukrainianDays = [
+            'неділя', 'понеділок', 'вівторок', 'середа', 'четвер', 'п’ятниця', 'субота'
+        ];
+
+        // On DOM Load initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFromLocalStorage();
+            startClock();
+            renderMonthButtons();
+            renderCurrentMonthData();
+            setupNoteListener();
+        });
+
+        // Live Clock Implementation
+        function startClock() {
+            const clockEl = document.getElementById('live-clock');
+
+            function updateTime() {
+                const now = new Date();
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const year = now.getFullYear();
+                const dayOfWeek = ukrainianDays[now.getDay()];
+
+                clockEl.textContent = `${hours}:${minutes} ${day}.${month}.${year}  ${dayOfWeek}`;
+            }
+
+            updateTime();
+            setInterval(updateTime, 1000);
+        }
+
+        // Get or initialize data structure for a given month
+        function getMonthData(m) {
+            if (!monthlyData[m]) {
+                // Default initial demo data if opening October for the first time
+                if (m === 10) {
+                    monthlyData[m] = {
+                        orders: [
+                            { id: '1', number: '2602', status: 'in-progress' },
+                            { id: '2', number: '2603', status: 'assembly' }
+                        ],
+                        noteText: ''
+                    };
+                } else {
+                    monthlyData[m] = {
+                        orders: [],
+                        noteText: ''
+                    };
+                }
+            }
+            return monthlyData[m];
+        }
+
+        // Switch active month
+        function selectMonth(m) {
+            selectedMonth = m;
+            renderMonthButtons();
+            renderCurrentMonthData();
+            saveToLocalStorage();
+        }
+
+        // Render Current Month Orders and Notes
+        function renderCurrentMonthData() {
+            const currentData = getMonthData(selectedMonth);
+            
+            // Render Orders
+            renderOrders(currentData.orders);
+
+            // Update Note field and header title
+            const noteEl = document.getElementById('daily-note');
+            noteEl.value = currentData.noteText || '';
+
+            const noteHeaderEl = document.getElementById('note-header');
+            noteHeaderEl.textContent = `Нотатка (${monthNames[selectedMonth - 1]})`;
+        }
+
+        // Render Kanban Orders
+        function renderOrders(ordersList) {
+            const columns = {
+                'in-progress': document.getElementById('col-in-progress'),
+                'assembly': document.getElementById('col-assembly'),
+                'done': document.getElementById('col-done')
+            };
+
+            // Clear existing columns
+            Object.values(columns).forEach(col => col.innerHTML = '');
+
+            // Render active order cards
+            ordersList.forEach(order => {
+                const card = document.createElement('div');
+                card.className = 'border-2 border-black p-3 bg-white font-mono font-bold text-xl text-center cursor-move hover:bg-gray-50 flex justify-between items-center box-shadow-flat group transition-all duration-150';
+                card.draggable = true;
+                card.dataset.id = order.id;
+
+                // Drag events
+                card.addEventListener('dragstart', (e) => {
+                    draggedOrderId = order.id;
+                    card.classList.add('dragging');
+                    e.dataTransfer.setData('text/plain', order.id);
+                });
+
+                card.addEventListener('dragend', () => {
+                    card.classList.remove('dragging');
+                    draggedOrderId = null;
+                });
+
+                card.innerHTML = `
+                    <span class="flex-1 text-center font-extrabold tracking-wider">${escapeHtml(order.number)}</span>
+                    <div class="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity text-xs font-sans">
+                        <button onclick="openEditModal('${order.id}')" title="Редагувати" class="px-1 py-0.5 border border-black hover:bg-black hover:text-white">✏️</button>
+                        <button onclick="deleteOrder('${order.id}')" title="Видалити" class="px-1 py-0.5 border border-black hover:bg-red-600 hover:text-white">✕</button>
+                    </div>
+                `;
+
+                if (columns[order.status]) {
+                    columns[order.status].appendChild(card);
+                }
+            });
+
+            // Fill empty slot visual indicators (slots to mimic paper form)
+            const maxSlots = 6;
+            Object.keys(columns).forEach(status => {
+                const count = ordersList.filter(o => o.status === status).length;
+                const remaining = maxSlots - count;
+                for (let i = 0; i < remaining; i++) {
+                    const emptySlot = document.createElement('div');
+                    emptySlot.className = 'border-2 border-gray-200 h-12 rounded border-dashed flex items-center justify-center text-gray-300 pointer-events-none';
+                    columns[status].appendChild(emptySlot);
+                }
+            });
+        }
+
+        // Drag & Drop Handlers
+        function handleDragOver(e) {
+            e.preventDefault();
+        }
+
+        function handleDragEnter(e) {
+            e.preventDefault();
+            if (e.currentTarget.classList.contains('column-container')) {
+                e.currentTarget.classList.add('bg-gray-100', 'border-black');
+            }
+        }
+
+        function handleDragLeave(e) {
+            if (e.currentTarget.classList.contains('column-container')) {
+                e.currentTarget.classList.remove('bg-gray-100', 'border-black');
+            }
+        }
+
+        function handleDrop(e, targetStatus) {
+            e.preventDefault();
+            const col = e.currentTarget;
+            col.classList.remove('bg-gray-100', 'border-black');
+
+            if (draggedOrderId) {
+                const currentData = getMonthData(selectedMonth);
+                const order = currentData.orders.find(o => o.id === draggedOrderId);
+                if (order && order.status !== targetStatus) {
+                    order.status = targetStatus;
+                    saveToLocalStorage();
+                    renderOrders(currentData.orders);
+                }
+            }
+        }
+
+        // Render Bottom 1-12 Month Buttons Grid
+        function renderMonthButtons() {
+            const gridContainer = document.getElementById('grid-buttons');
+            gridContainer.innerHTML = '';
+
+            for (let i = 1; i <= 12; i++) {
+                const isSelected = (i === selectedMonth);
+                const btn = document.createElement('button');
+                btn.className = `border-2 border-black p-2 font-bold transition-all flex flex-col items-center justify-center ${
+                    isSelected ? 'bg-black text-white' : 'bg-white text-black hover:bg-gray-100'
+                }`;
+                btn.innerHTML = `
+                    <span class="text-xs font-mono opacity-80">${i}</span>
+                    <span class="text-xs sm:text-sm font-extrabold uppercase tracking-tight">${monthNames[i-1].slice(0, 3)}</span>
+                `;
+                btn.title = `${i} — ${monthNames[i-1]}`;
+                btn.onclick = () => selectMonth(i);
+                gridContainer.appendChild(btn);
+            }
+        }
+
+        // Setup Daily Note auto-save listener
+        function setupNoteListener() {
+            const noteEl = document.getElementById('daily-note');
+            noteEl.addEventListener('input', (e) => {
+                const currentData = getMonthData(selectedMonth);
+                currentData.noteText = e.target.value;
+                saveToLocalStorage();
+            });
+        }
+
+        // Modal Logic (Add/Edit)
+        function openAddModal() {
+            document.getElementById('modal-title').textContent = 'Нове замовлення';
+            document.getElementById('order-id').value = '';
+            document.getElementById('order-number').value = '';
+            document.getElementById('order-status').value = 'in-progress';
+            document.getElementById('order-modal').classList.remove('hidden');
+            document.getElementById('order-modal').classList.add('flex');
+            document.getElementById('order-number').focus();
+        }
+
+        function openEditModal(id) {
+            const currentData = getMonthData(selectedMonth);
+            const order = currentData.orders.find(o => o.id === id);
+            if (!order) return;
+
+            document.getElementById('modal-title').textContent = 'Редагувати замовлення';
+            document.getElementById('order-id').value = order.id;
+            document.getElementById('order-number').value = order.number;
+            document.getElementById('order-status').value = order.status;
+            document.getElementById('order-modal').classList.remove('hidden');
+            document.getElementById('order-modal').classList.add('flex');
+        }
+
+        function closeAddModal() {
+            document.getElementById('order-modal').classList.add('hidden');
+            document.getElementById('order-modal').classList.remove('flex');
+        }
+
+        function saveOrder(e) {
+            e.preventDefault();
+            const id = document.getElementById('order-id').value;
+            const number = document.getElementById('order-number').value.trim();
+            const status = document.getElementById('order-status').value;
+
+            if (!number) return;
+
+            const currentData = getMonthData(selectedMonth);
+
+            if (id) {
+                // Edit existing
+                const order = currentData.orders.find(o => o.id === id);
+                if (order) {
+                    order.number = number;
+                    order.status = status;
+                }
+            } else {
+                // Add new
+                currentData.orders.push({
+                    id: Date.now().toString(),
+                    number: number,
+                    status: status
+                });
+            }
+
+            saveToLocalStorage();
+            renderOrders(currentData.orders);
+            closeAddModal();
+        }
+
+        function deleteOrder(id) {
+            const currentData = getMonthData(selectedMonth);
+            currentData.orders = currentData.orders.filter(o => o.id !== id);
+            saveToLocalStorage();
+            renderOrders(currentData.orders);
+        }
+
+        // LocalStorage Data Persistence
+        function saveToLocalStorage() {
+            const data = {
+                monthlyData,
+                selectedMonth
+            };
+            localStorage.setItem('khotabych_app_data_v2', JSON.stringify(data));
+        }
+
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('khotabych_app_data_v2');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    if (parsed.monthlyData) monthlyData = parsed.monthlyData;
+                    if (parsed.selectedMonth) selectedMonth = parsed.selectedMonth;
+                } catch (e) {
+                    console.error('Помилка завантаження даних:', e);
+                }
+            }
+        }
+
+        // Helper: Escape HTML to prevent XSS
+        function escapeHtml(str) {
+            return str.replace(/[&<>"']/g, function(m) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                }[m];
+            });
+        }
+    </script>
+</body>
+</html>
